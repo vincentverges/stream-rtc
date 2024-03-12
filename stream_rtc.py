@@ -1,14 +1,14 @@
 import asyncio
 import json
 import websockets
-from aiortc import RTCPeerConnection, MediaStreamTrack, RTCSessionDescription
+from aiortc import RTCPeerConnection, VideoStreamTrack, RTCSessionDescription
 from aiortc.contrib.media import MediaPlayer
 
-class CameraStreamTrack(MediaStreamTrack):
+class CameraStreamTrack(VideoStreamTrack):
 	def __init__(self):
 		super().__init__()
 		# Utiliser ffmpeg pour capturer la video du Rasp
-		self.player = MediaPlayer("/dev/video0", format="v4l2", options={"video_size": "640x480"})
+		self.player = MediaPlayer('/dev/media3', format='v4l2')
 		
 	async def recv(self):
 		frame = await self.player.video.recv()
