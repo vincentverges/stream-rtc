@@ -133,11 +133,11 @@ async def main(room: rtc.Room) -> None:
 
     await asyncio.sleep(1)
     await room.local_participant.publish_data("HELLO WORLD")
-    await print("TEST HELLO WORLD")
+    print("TEST HELLO WORLD")
 
     await asyncio.sleep(1)
     await room.local_participant.publish_data("HELLO WORLD2")
-    await print("TEST HELLO WORLD2")
+    print("TEST HELLO WORLD2")
 
 
 if __name__ == "__main__":
