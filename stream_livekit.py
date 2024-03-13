@@ -10,7 +10,7 @@ LIVEKIT_API_SECRET = "3L4tfzrYo7PbHYJuvX9HdGTwlzeAFNwJebpfiFOGMvfA"
 
 current_token = api.AccessToken().width_identity("raspberry").with_name("Raspberry").with_grants(api.VideoGrants(
     room_join=True,
-    room="rccar""
+    room="rccar"
 )).to_jwt()
 
 print(current_token)
