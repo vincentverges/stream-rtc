@@ -15,7 +15,6 @@ async def app():
     print("LA")    
     await room.connect(os.getenv('LIVEKIT_URL'), current_token)
     print(room.name)
-    #logging.info("connected to room %s", room.name)
 
 if __name__ == "__main__":
     # logging.basicConfig(level=logging.INFO)
