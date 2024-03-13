@@ -1,6 +1,6 @@
 import asyncio
 import logging
-livekit import rtc
+from livekit import rtc
 
 # Informations LiveKit
 LIVEKIT_URL = "wss://rccar-r1tndvld.livekit.cloud"
