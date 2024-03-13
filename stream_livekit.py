@@ -12,13 +12,7 @@ current_token = api.AccessToken(os.getenv('LIVEKIT_API_KEY'), os.getenv('LIVEKIT
 print(current_token)
 
 async def app():
-    room = rtc.Room()
-    
-    @room.on("participant_connected")
-    def on_participant_connected(participant: rtc.RemoteParticipant):
-        logging.info(
-            "participant connected: %s %s", participant.sid, participant.identity)
-    
+    room = rtc.Room()    
     await room.connect(os.getenv('LIVEKIT_URL'), current_token)
     logging.info("connected to room %s", room.name)
 
