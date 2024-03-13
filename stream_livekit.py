@@ -9,12 +9,13 @@ current_token = api.AccessToken(os.getenv('LIVEKIT_API_KEY'), os.getenv('LIVEKIT
     room="rccar"
 )).to_jwt()
 
-print(current_token)
-
 async def app():
-    room = rtc.Room()    
+    print("ICI")
+    room = rtc.Room()
+    print("LA")    
     await room.connect(os.getenv('LIVEKIT_URL'), current_token)
-    logging.info("connected to room %s", room.name)
+    print(room.name)
+    #logging.info("connected to room %s", room.name)
 
 if __name__ == "__main__":
     # logging.basicConfig(level=logging.INFO)
