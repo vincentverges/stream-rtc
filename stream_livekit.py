@@ -3,6 +3,7 @@ import logging
 from signal import SIGINT, SIGTERM
 from typing import Union
 import os
+import json
 
 from livekit import api, rtc
 
@@ -131,8 +132,16 @@ async def main(room: rtc.Room) -> None:
     logging.info("connected to room %s", room.name)
     logging.info("participants: %s", room.participants)
 
+    data_to_send = {
+        "id": "436bd926-7e00-424f-91f2-d9220cd3be4b",
+        "message": "bim"
+    }
+
+    # Convertissez le dictionnaire en une chaîne JSON
+    json_data = json.dumps(data_to_send)
+
     await asyncio.sleep(1)
-    await room.local_participant.publish_data("HELLO WORLD")
+    await room.local_participant.publish_data(json_data)
 
 
 if __name__ == "__main__":
