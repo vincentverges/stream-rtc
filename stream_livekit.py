@@ -13,7 +13,7 @@ print(current_token)
 
 async def app():
     room = rtc.Room()
-    await room.connect(LIVEKIT_URL, current_token)
+    await room.connect(os.getenv('LIVEKIT_URL'), current_token)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
