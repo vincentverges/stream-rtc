@@ -13,4 +13,5 @@ async def app():
     await room.connect(LIVEKIT_URL, TOKEN)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(app())
