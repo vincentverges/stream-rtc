@@ -1,15 +1,10 @@
 import asyncio
 import logging
 
-from livekit import api
-from livekit import rtc
+from livekit import api, rtc
 import os
 
-# Informations LiveKit
-LIVEKIT_URL = "wss://rccar-r1tndvld.livekit.cloud"
-#TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTAzNDEyMTQsImlzcyI6IkFQSVJuaUthaFJaUUNIdSIsIm5iZiI6MTcxMDM0MDMxNCwic3ViIjoicmFzcGJlcnJ5IiwidmlkZW8iOnsiY2FuUHVibGlzaCI6dHJ1ZSwiY2FuUHVibGlzaERhdGEiOnRydWUsImNhblN1YnNjcmliZSI6dHJ1ZSwicm9vbSI6InJjY2FyIiwicm9vbUpvaW4iOnRydWV9fQ.BI8h74zEL0TcSn31S5u9XbJ2emsP2BphFxtgB0eYFe4"
-
-current_token = api.AccessToken().width_identity("raspberry").with_name("Raspberry").with_grants(api.VideoGrants(
+current_token = api.AccessToken(os.getenv('LIVEKIT_API_KEY'), os.getenv('LIVEKIT_API_SECRET')).width_identity("raspberry").with_name("Raspberry").with_grants(api.VideoGrants(
     room_join=True,
     room="rccar"
 )).to_jwt()
