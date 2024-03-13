@@ -131,8 +131,8 @@ async def main(room: rtc.Room) -> None:
     logging.info("connected to room %s", room.name)
     logging.info("participants: %s", room.participants)
 
-    await asyncio.sleep(2)
-    await room.local_participant.publish_data("hello world")
+    await asyncio.sleep(1)
+    await room.local_participant.publish_data("HELLO WORLD")
 
 if __name__ == "__main__":
     logging.basicConfig(
