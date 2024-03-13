@@ -3,7 +3,9 @@ import fractions
 import numpy as np
 import json
 import websockets
+import logging
 
+from livekit import rtc
 from aiortc import RTCPeerConnection, VideoStreamTrack, RTCSessionDescription
 from aiortc.contrib.media import MediaRelay
 
@@ -57,45 +59,41 @@ class GSTCameraStreamTrack(VideoStreamTrack):
 	async def recv(self):
 		frame = await self.relay.track(self).recv()
 		return frame
-		
-async def connect_to_livekit(url, token):
-	pc = RTCPeerConnection()
-	relay = MediaRelay()
-	
-	local_video = GSTCameraStreamTrack()
-	relayed_track = relay.subscribe(local_video)
-	pc.addTrack(relayed_track)
-	
-	# Etablir une connexion WebSocket avec l'URL de LiveKit
-	async with websockets.connect(url) as ws:
-		# Envoyer le token pour l'auth
-		await ws.send(json.dumps({'type':'join', 'token': token}))
-		
-		# Attendre la confirmation de LiveKit avant de continuer
-		response = await ws.recv()
-		print("Réponse de LiveKit: ", response)
-		
-		# Créer une offre WebRTC et l'envoyer à LiveKit via WebSocket
-		offer = await pc.createOffer()
-		await pc.setLocalDescription(offer)
-		
-		offer_msg = json.dumps({"type":"offer", "sdp": offer.sdp})
-		await ws.send(offer_msg)
-		
-		# Attendre la reponse de LiveKit (Réponse WebRTC)
-		answer_msg = await ws.recv()
-		answer = json.loads(answer_msg)
-		
-		# Definir la description distante avec la réponse LiveKit
-		if answer['type'] == 'answer':
-			await pc.setRemoteDescription(RTCSessionDescription(type=answer['type'], sdp=answer['sdp']))
-		else:
-			print('Reponse innatendu de LiveKit: ', answer)
-			
 
 # URL et Token
-LIVEKIT_URL = "wss://rccar-r1tndvld.livekit.cloud"
-TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTAyODQxODMsImlzcyI6IkFQSVJuaUthaFJaUUNIdSIsIm5iZiI6MTcxMDI4MzI4Mywic3ViIjoicmFzcGJlcnJ5IiwidmlkZW8iOnsiY2FuUHVibGlzaCI6dHJ1ZSwiY2FuUHVibGlzaERhdGEiOnRydWUsImNhblN1YnNjcmliZSI6dHJ1ZSwicm9vbSI6InJjY2FyIiwicm9vbUpvaW4iOnRydWV9fQ.iGPvLXbbhg3CZUqU-ANvWsqPdCIRwdyIQIrdJsUQ6test7I"
+URL = "wss://rccar-r1tndvld.livekit.cloud"
+TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTAyOTExNjQsImlzcyI6IkFQSVJuaUthaFJaUUNIdSIsIm5iZiI6MTcxMDI5MDI2NCwic3ViIjoicmFzcGJlcnJ5IiwidmlkZW8iOnsiY2FuUHVibGlzaCI6dHJ1ZSwiY2FuUHVibGlzaERhdGEiOnRydWUsImNhblN1YnNjcmliZSI6dHJ1ZSwicm9vbSI6InJjY2FyIiwicm9vbUpvaW4iOnRydWV9fQ.yk4lXE_3pxXVgkQNLvuf54eBieXgTkbLPW1PLbG6mEA"
+
+		
+async def connect_to_livekit():
+	room = rtc.Room()
+	
+	@room.on("participant_connected")
+	def on_participant_connected(participant: rtc.RemoteParticipant):
+		logging.info("Participant connecté:  %s %s",participant.sid, participant.idnetity)
+		
+	@room.on("track_subscribed")
+	def on_track_subscribed(track: rtc.Track, publication: rtc.RemoteTrackPublication, participant: rtc.RemoteParticipant):
+		logging.info("Piste souscrite: %s", publication.sid)
+		if isinstance(track, rtc.VideoTrack):
+			asyncio.create_task(receive_frames(track))
+			
+	await room.connect(URL, TOKEN)
+	logging.info("Connecté à la salle %s", room.name)
+	
+
+	local_video = GSTCameraStreamTrack()
+	await room.local_participant.publish_video_track(track=local_video)
+
+	while True:
+		await asyncio.sleep(3600)
+		
+async def receive_frames(video_track):
+	async for frame in video_track:
+		pass
+			
 
 # Executer la fonction
-asyncio.run(connect_to_livekit(LIVEKIT_URL, TOKEN))
+if __name__=="__main__":
+	logging.basicConfig(level=logging.INFO)
+	asyncio.run(connect_to_livekit())
