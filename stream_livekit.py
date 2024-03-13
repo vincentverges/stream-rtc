@@ -4,7 +4,7 @@ import logging
 from livekit import api, rtc
 import os
 
-current_token = api.AccessToken(os.getenv('LIVEKIT_API_KEY'), os.getenv('LIVEKIT_API_SECRET')).width_identity("raspberry").with_name("Raspberry").with_grants(api.VideoGrants(
+current_token = api.AccessToken(os.getenv('LIVEKIT_API_KEY'), os.getenv('LIVEKIT_API_SECRET')).with_identity("raspberry").with_name("Raspberry").with_grants(api.VideoGrants(
     room_join=True,
     room="rccar"
 )).to_jwt()
