@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from livekit import rtc
 
 # Informations LiveKit
