@@ -17,7 +17,7 @@ async def get_token():
     async with aiohttp.ClientSession() as session:
         async with session.get("http://165.22.203.182/token", headers=headers) as resp:
             if resp.status == 200:
-                data = await resp.json
+                data = await resp.json()
                 return data.get('token')
             else:
                 logging.error(f"Failed to get token, status: {resp.status}")
