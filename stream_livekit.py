@@ -4,6 +4,7 @@ from signal import SIGINT, SIGTERM
 from typing import Union
 import os
 import aiohttp
+import json
 
 from livekit import rtc
 
@@ -148,8 +149,9 @@ async def main(room: rtc.Room) -> None:
     logging.info("connected to room %s", room.name)
     logging.info("participants: %s", room.participants)
 
-    await room.local_participant.publish_data("HELLO WORLD")
-
+    str_data = json.dumps({"message": "hello world"}, separators=(',', ':'))
+    data_to_send = str_data.encode()
+    await room.local_participant.publish_data(data_to_send)
 
 if __name__ == "__main__":
     logging.basicConfig(
