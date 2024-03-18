@@ -151,7 +151,6 @@ async def main(room: rtc.Room) -> None:
 
     str_data = json.dumps({"message": "hello world"}, separators=(',', ':'))
     data_to_send = str_data.encode()
-    await print(data_to_send)
     await logging.info("DATA TO SEND")
     await room.local_participant.publish_data(data_to_send)
 
