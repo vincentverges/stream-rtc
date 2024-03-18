@@ -3,13 +3,25 @@ import logging
 from signal import SIGINT, SIGTERM
 from typing import Union
 import os
+import aiohttp
 
-from livekit import api, rtc
+from livekit import rtc
 
-current_token = api.AccessToken(os.getenv('LIVEKIT_API_KEY'), os.getenv('LIVEKIT_API_SECRET')).with_identity("raspberry").with_name("Raspberry").with_grants(api.VideoGrants(
-    room_join=True,
-    room="rccar"
-)).to_jwt()
+async def get_token():
+    headers = {
+        'identity': 'raspberry',  # Remplacez par l'identité souhaitée
+        'name': 'Raspberry',  # Remplacez par le nom souhaité
+        'room': 'rccar',  # Remplacez par le nom de la salle souhaité
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get("http://165.22.203.182/token", headers=headers) as resp:
+            if resp.status == 200:
+                data = await resp.json
+                return data.get('token')
+            else:
+                logging.error(f"Failed to get token, status: {resp.status}")
+                return None
 
 async def main(room: rtc.Room) -> None:
     @room.on("participant_connected")
@@ -127,14 +139,14 @@ async def main(room: rtc.Room) -> None:
     def on_reconnected() -> None:
         logging.info("reconnected")
 
-    await room.connect(os.getenv('LIVEKIT_URL'), current_token)
+    token = await get_token()
+    if token is None:
+        logging.error("No token received, cannot connect to room.")
+        return
+
+    await room.connect(os.getenv('LIVEKIT_URL'), token)
     logging.info("connected to room %s", room.name)
     logging.info("participants: %s", room.participants)
-
-    data_to_send = {
-        "id": "436bd926-7e00-424f-91f2-d9220cd3be4b",
-        "message": "bim"
-    }
 
     await room.local_participant.publish_data("HELLO WORLD")
 
