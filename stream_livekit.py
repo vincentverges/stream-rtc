@@ -149,11 +149,12 @@ async def main(room: rtc.Room) -> None:
     logging.info("connected to room %s", room.name)
     logging.info("participants: %s", room.participants)
 
-    str_data = json.dumps({"message": "hello world"}, separators=(',', ':'))
-    data_to_send = str_data.encode()
+    # str_data = json.dumps({"message": "hello world"}, separators=(',', ':'))
+    # data_to_send = str_data.encode()
+    data_to_send = "HELLO WORLD"
 
     try:
-        await room.local_participant.publish_data(data_to_send, kind=False)
+        await room.local_participant.publish_data(data_to_send)
         logging.info("Data sent succesfully")
     except Exception as e:
         logging.error(f"Error sending data: {e}")
