@@ -154,8 +154,8 @@ async def main(room: rtc.Room) -> None:
     data_to_send = "HELLO WORLD"
 
     try:
-        await room.local_participant.publish_data(data_to_send)
-        logging.info("Data sent succesfully")
+        resp = await room.local_participant.publish_data(data_to_send)
+        logging.info(f"Data sent succesfully : {resp}")
     except Exception as e:
         logging.error(f"Error sending data: {e}")
 
