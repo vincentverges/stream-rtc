@@ -184,7 +184,7 @@ async def main(room: rtc.Room) -> None:
                 h264_frame = video_file.read()
 
             if h264_frame:
-                video_track = rtc.LocalVideoTrack.create_h264_track("camera", h264_frame)
+                video_track = rtc.LocalVideoTrack("camera", h264_frame)
                 await room.local_participant.publish_track(video_track)
 
             await asyncio.sleep(1 / 30)
