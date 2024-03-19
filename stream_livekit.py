@@ -187,7 +187,7 @@ async def stream_camera_to_livekit(source, picam2):
 
     try:
         while True:
-            array_frame = picam2.capture_array()
+            array_frame = picam2.capture_array("stream_cam")
             frame = rtc.VideoFrame(1920, 1080, rtc.VideoBufferType.RGBA, array_frame)
             source.capture_frame(frame)
             await asyncio.sleep(1 / 30)
