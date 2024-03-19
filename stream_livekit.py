@@ -170,21 +170,15 @@ async def main(room: rtc.Room) -> None:
 
     # Picamera2 init
     picam2 = Picamera2()
-    video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
+    video_config = picam2.create_video_configuration()
     picam2.configure(video_config)
     # picam2.start_preview(Preview.QTGL) 
     
-    encoder = H264Encoder(bitrate=3000000)
+    encoder = H264Encoder(repeat=True, iperiod=15)
     
-    def on_encoded_frame(encoder, frame):
-        # Convertir la frame en un format utilisable par LiveKit
-        # Note: Vous devrez peut-être adapter cette partie pour qu'elle corresponde à l'API et aux attentes de LiveKit
-        h264_frame = frame.data
-        if h264_frame:
-            video_track = rtc.LocalVideoTrack.create_video_track("camera", h264_frame)
-            asyncio.run_coroutine_threadsafe(room.local_participant.publish_track(video_track), asyncio.get_event_loop())
+    video_track = rtc.LocalVideoTrack.create_video_track("camera", encoder.get_stream())
+    asyncio.run_coroutine_threadsafe(room.local_participant.publish_track(video_track), asyncio.get_event_loop())
     
-    encoder.set_callback(on_encoded_frame)
 
     # Démarrer l'enregistrement avec l'encodeur H.264
     picam2.start_recording(encoder)
