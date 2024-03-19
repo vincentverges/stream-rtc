@@ -10,6 +10,7 @@ import time
 
 from livekit import rtc
 from picamera2 import Picamera2, Preview
+from picamera2.encoders import H264Encoder
 
 async def get_token():
     headers = {
@@ -172,16 +173,41 @@ async def main(room: rtc.Room) -> None:
     video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
     picam2.configure(video_config)
     # picam2.start_preview(Preview.QTGL) 
-    picam2.start()
+    
+    encoder = H264Encoder(bitrate=3000000)
+    
+    def on_encoded_frame(encoder, frame):
+        # Convertir la frame en un format utilisable par LiveKit
+        # Note: Vous devrez peut-être adapter cette partie pour qu'elle corresponde à l'API et aux attentes de LiveKit
+        h264_frame = frame.data
+        if h264_frame:
+            video_track = rtc.LocalVideoTrack.create_video_track("camera", h264_frame)
+            asyncio.run_coroutine_threadsafe(room.local_participant.publish_track(video_track), asyncio.get_event_loop())
+    
+    encoder.set_callback(on_encoded_frame)
 
-    source = rtc.VideoSource(1920, 1080)
+    # Démarrer l'enregistrement avec l'encodeur H.264
+    picam2.start_recording(encoder)
+
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except Exception as e:
+        logging.error(f"Error during video streaming: {e}")
+    finally:
+        picam2.stop_recording()
+        picam2.stop()
+
+    '''source = rtc.VideoSource(1920, 1080)
     track = rtc.LocalVideoTrack.create_video_track("camera", source)
     options = rtc.TrackPublishOptions()
     options.source = rtc.TrackSource.SOURCE_CAMERA
     publication = await room.local_participant.publish_track(track)
     logging.info("published track %s", publication.sid)
     
-    asyncio.ensure_future(stream_camera_to_livekit(source, picam2))
+    asyncio.ensure_future(stream_camera_to_livekit(source, picam2))'''
+
+
 
 async def stream_camera_to_livekit(source, picam2):
 
