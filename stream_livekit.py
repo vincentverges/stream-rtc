@@ -9,7 +9,7 @@ import uuid
 import time
 
 from livekit import rtc
-from picamera2 import Picamera2
+from picamera2 import Picamera2, Preview
 
 async def get_token():
     headers = {
@@ -172,6 +172,7 @@ async def main(room: rtc.Room) -> None:
     video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
     picam2.configure(video_config)
     picam2.start()
+    picam2.start_preview(Preview.QTGL) 
 
     source = rtc.VideoSource(1920, 1080)
     track = rtc.LocalVideoTrack.create_video_track("camera", source)
@@ -195,6 +196,7 @@ async def stream_camera_to_livekit(source, picam2):
     finally:
         picam2.stop_recording()  # Arrête l'enregistrement vidéo
         picam2.stop()  # Arrête la caméra
+        picam2.stop_preview()
 
 if __name__ == "__main__":
     logging.basicConfig(
