@@ -153,9 +153,10 @@ async def main(room: rtc.Room) -> None:
     data_to_send = str_data.encode()
     # data_to_send = "HELLO WORLD"
 
+    await asyncio.sleep(4)
     try:
         resp = await room.local_participant.publish_data(data_to_send, topic='lk-chat-topic')
-        logging.info(f"Data sent succesfully : {resp}")
+        logging.info(f"Data sent succesfully : {resp} - {data_to_send}")
     except Exception as e:
         logging.error(f"Error sending data: {e}")
 
