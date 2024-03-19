@@ -167,10 +167,6 @@ async def main(room: rtc.Room) -> None:
     except Exception as e:
         logging.error(f"Error sending data: {e}")
 
-    await stream_camera_to_livekit(room)
-
-async def stream_camera_to_livekit(room: rtc.Room):
-    
     # Picamera2 init
     picam2 = Picamera2()
     video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
@@ -181,11 +177,15 @@ async def stream_camera_to_livekit(room: rtc.Room):
     track = rtc.LocalVideoTrack.create_video_track("camera", source)
     publication = await room.local_participant.publish_track(track)
     logging.info("published track %s", publication.sid)
+    
+    asyncio.ensure_future(stream_camera_to_livekit(source, picam2))
+
+async def stream_camera_to_livekit(source, picam2):
 
     try:
         while True:
             frame = picam2.capture_array()
-            track.send_video_frame(frame)
+            source.capture_frame(frame)
             await asyncio.sleep(1 / 30)
 
     except Exception as e:
