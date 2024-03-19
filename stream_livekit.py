@@ -171,7 +171,7 @@ async def main(room: rtc.Room) -> None:
     picam2 = Picamera2()
     video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
     picam2.configure(video_config)
-    picam2.start_preview(Preview.QTGL) 
+    # picam2.start_preview(Preview.QTGL) 
     picam2.start()
 
     source = rtc.VideoSource(1920, 1080)
@@ -198,7 +198,7 @@ async def stream_camera_to_livekit(source, picam2):
     finally:
         picam2.stop_recording()  # Arrête l'enregistrement vidéo
         picam2.stop()  # Arrête la caméra
-        picam2.stop_preview()
+        # picam2.stop_preview()
 
 if __name__ == "__main__":
     logging.basicConfig(
