@@ -5,6 +5,8 @@ from typing import Union
 import os
 import aiohttp
 import json
+import uuid
+import time
 
 from livekit import rtc
 
@@ -149,9 +151,14 @@ async def main(room: rtc.Room) -> None:
     logging.info("connected to room %s", room.name)
     logging.info("participants: %s", room.participants)
 
-    str_data = json.dumps({"message": "hello world"}, separators=(',', ':'))
+    message_id = str(uuid.uuid4())
+    timestamp = int(time.time() * 1000)
+    str_data = json.dumps({
+        "id": message_id,
+        "message": "C'est qui le patron ??!!",
+        "timestamp": timestamp
+        })
     data_to_send = str_data.encode()
-    # data_to_send = "HELLO WORLD"
 
     await asyncio.sleep(4)
     try:
