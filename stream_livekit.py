@@ -30,16 +30,6 @@ async def get_token():
 
 async def main(room: rtc.Room) -> None:
 
-    # Picamera2 init
-    picam2 = Picamera2()
-    video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
-    picam2.configure(video_config)
-    picam2.start()
-
-    # Config de l'encodeurH264
-    encoder = H264Encoder(bitrate=5000000)
-    picam2.start_recording(encoder, "video.h264")
-
     @room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant) -> None:
         logging.info(
@@ -178,15 +168,31 @@ async def main(room: rtc.Room) -> None:
     except Exception as e:
         logging.error(f"Error sending data: {e}")
 
+    # Picamera2 init
+    picam2 = Picamera2()
+    video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
+    picam2.configure(video_config)
+    picam2.start()
+
+    # Config de l'encodeurH264
+    encoder = H264Encoder(bitrate=5000000)
+    picam2.start_recording(encoder, "video.h264")
+
+    source = rtc.VideoSource(1920, 1080)
+    track = rtc.LocalVideoTrack.create_video_track("camera", source)
+    publication = await room.local_participant.publish_track(video_track)
+    logging.info("published track %s", publication.sid)
+
+    asyncio.ensure_future(stream_video(source, picam2))
+
+async def stream_video(source: rtc.VideoSource, picam2: Picamera2):
+
     try:
         while True:
             with open("video.h264", "rb") as video_file:
                 h264_frame = video_file.read()
-
-            if h264_frame:
-                video_track = rtc.LocalVideoTrack("camera", h264_frame)
-                await room.local_participant.publish_track(video_track)
-
+                source.capture_frame(h264_frame)
+            
             await asyncio.sleep(1 / 30)
 
     except Exception as e:
