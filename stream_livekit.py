@@ -8,7 +8,9 @@ import json
 import uuid
 import time
 
-from livekit import rtc
+from livekit import rtc, VideoTrack
+from picamera2 import Picamera2, Preview
+from picamera2.encoders import H264Encoder
 
 async def get_token():
     headers = {
@@ -27,6 +29,21 @@ async def get_token():
                 return None
 
 async def main(room: rtc.Room) -> None:
+
+    # Picamera2 init
+    picam2 = Picamera2()
+    video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
+    picam2.configure(video_config)
+    picam2.start()
+
+    # Config de l'encodeurH264
+    encoder = H264Encoder(bitrate=5000000)
+    encoder.output = None
+
+    # Démarrage de l'enregistrement pour l'encodage en H264
+    picam2.video_configuration.main.encoder = encoder
+    picam2.start_recording()
+
     @room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant) -> None:
         logging.info(
@@ -159,13 +176,22 @@ async def main(room: rtc.Room) -> None:
         "timestamp": timestamp
         })
     data_to_send = str_data.encode()
-
-    await asyncio.sleep(4)
     try:
         resp = await room.local_participant.publish_data(data_to_send, topic='lk-chat-topic')
         logging.info(f"Data sent succesfully : {resp} - {data_to_send}")
     except Exception as e:
         logging.error(f"Error sending data: {e}")
+
+    while True:
+        frame = await picam2.capture.array()
+        encoded_frame = encoder.take_output()
+
+        if encoded_frame:
+            video_track = VideoTrack(encoded_frame)
+            await room.local_participant.publish_track(video_track)
+
+        await asyncio.sleep(1/30)
+
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -178,6 +204,8 @@ if __name__ == "__main__":
 
     async def cleanup():
         await room.disconnect()
+        picam2.stop_recording()  # Arrête l'enregistrement vidéo
+        picam2.stop()  # Arrête la caméra
         loop.stop()
 
     asyncio.ensure_future(main(room))
