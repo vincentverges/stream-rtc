@@ -8,7 +8,7 @@ import json
 import uuid
 import time
 
-from livekit import rtc, VideoTrack
+from livekit import rtc
 from picamera2 import Picamera2, Preview
 from picamera2.encoders import H264Encoder
 
@@ -38,11 +38,7 @@ async def main(room: rtc.Room) -> None:
 
     # Config de l'encodeurH264
     encoder = H264Encoder(bitrate=5000000)
-    encoder.output = None
-
-    # Démarrage de l'enregistrement pour l'encodage en H264
-    picam2.video_configuration.main.encoder = encoder
-    picam2.start_recording()
+    picam2.start_recording(encoder, "video.h264")
 
     @room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant) -> None:
@@ -182,16 +178,23 @@ async def main(room: rtc.Room) -> None:
     except Exception as e:
         logging.error(f"Error sending data: {e}")
 
-    while True:
-        frame = await picam2.capture.array()
-        encoded_frame = encoder.take_output()
+    try:
+        while True:
+            with open("video.h264", "rb") as video_file:
+                h264_frame = video_file.read()
 
-        if encoded_frame:
-            video_track = VideoTrack(encoded_frame)
-            await room.local_participant.publish_track(video_track)
+            if h264_frame:
+                video_track = rtc.LocalVideoTrack.create_h264_track("camera", h264_frame)
+                await room.local_participant.publish_track(video_track)
 
-        await asyncio.sleep(1/30)
+            await asyncio.sleep(1 / 30)
 
+    except Exception as e:
+        logging.error(f"Error during video streaming: {e}")
+
+    finally:
+        picam2.stop_recording()  # Arrête l'enregistrement vidéo
+        picam2.stop()  # Arrête la caméra
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -204,8 +207,6 @@ if __name__ == "__main__":
 
     async def cleanup():
         await room.disconnect()
-        picam2.stop_recording()  # Arrête l'enregistrement vidéo
-        picam2.stop()  # Arrête la caméra
         loop.stop()
 
     asyncio.ensure_future(main(room))
