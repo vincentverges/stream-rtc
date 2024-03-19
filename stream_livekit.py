@@ -8,9 +8,8 @@ import json
 import uuid
 import time
 
-from livekit import rtc
-from picamera2 import Picamera2, Preview
-from picamera2.encoders import H264Encoder
+from livekit import rtc, Room
+from picamera2 import Picamera2
 
 async def get_token():
     headers = {
@@ -168,31 +167,24 @@ async def main(room: rtc.Room) -> None:
     except Exception as e:
         logging.error(f"Error sending data: {e}")
 
+    await stream_camera_to_livekit(room)
+
+async def stream_camera_to_livekit(room: Room):
+    
     # Picamera2 init
     picam2 = Picamera2()
     video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
     picam2.configure(video_config)
     picam2.start()
 
-    # Config de l'encodeurH264
-    encoder = H264Encoder(bitrate=5000000)
-    picam2.start_recording(encoder, "video.h264")
-
-    source = rtc.VideoSource(1920, 1080)
-    track = rtc.LocalVideoTrack.create_video_track("camera", source)
+    track = rtc.LocalVideoTrack.create_video_track("camera")
     publication = await room.local_participant.publish_track(track)
     logging.info("published track %s", publication.sid)
 
-    asyncio.ensure_future(stream_video(source, picam2))
-
-async def stream_video(source: rtc.VideoSource, picam2: Picamera2):
-
     try:
         while True:
-            with open("video.h264", "rb") as video_file:
-                h264_frame = video_file.read()
-                source.capture_frame(h264_frame)
-            
+            frame = picam2.capture_array()
+            track.send_video_frame(frame)
             await asyncio.sleep(1 / 30)
 
     except Exception as e:
