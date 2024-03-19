@@ -8,7 +8,7 @@ import json
 import uuid
 import time
 
-from livekit import rtc, Room
+from livekit import rtc
 from picamera2 import Picamera2
 
 async def get_token():
@@ -169,7 +169,7 @@ async def main(room: rtc.Room) -> None:
 
     await stream_camera_to_livekit(room)
 
-async def stream_camera_to_livekit(room: Room):
+async def stream_camera_to_livekit(room: rtc.Room):
     
     # Picamera2 init
     picam2 = Picamera2()
