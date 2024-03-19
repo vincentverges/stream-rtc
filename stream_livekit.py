@@ -171,8 +171,8 @@ async def main(room: rtc.Room) -> None:
     picam2 = Picamera2()
     video_config = picam2.create_video_configuration(main={"size": (1920, 1080)})
     picam2.configure(video_config)
-    picam2.start()
     picam2.start_preview(Preview.QTGL) 
+    picam2.start()
 
     source = rtc.VideoSource(1920, 1080)
     track = rtc.LocalVideoTrack.create_video_track("camera", source)
