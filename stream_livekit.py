@@ -177,7 +177,7 @@ async def main(room: rtc.Room) -> None:
     source = rtc.VideoSource(1920, 1080)
     track = rtc.LocalVideoTrack.create_video_track("camera", source)
     options = rtc.TrackPublishOptions()
-    options.source = rtc.TrackSource.SOURCE_CAMERA
+    options.source = "camera"
     publication = await room.local_participant.publish_track(track)
     logging.info("published track %s", publication.sid)
     
