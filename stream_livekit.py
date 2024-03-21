@@ -27,7 +27,7 @@ async def get_token():
                 logging.error(f"Failed to get token, status: {resp.status}")
                 return None
 
-async def publish_frame_to_livekit(room, video_pipe):
+async def publish_frame_to_livekit(room, process):
     # Envoi du stream sur la room
     # Créer une source vidéo personnalisée
     source = rtc.VideoSource(1920, 1080)
@@ -37,19 +37,18 @@ async def publish_frame_to_livekit(room, video_pipe):
     options.source = rtc.TrackSource.SOURCE_CAMERA
     publication = await room.local_participant.publish_track(track, options)
     logging.info("published track %s", publication.sid)
-    asyncio.ensure_future(video_cycle(source, video_pipe))
+    asyncio.ensure_future(video_cycle(source, process))
 
  
-async def video_cycle(source: rtc.VideoSource, video_pipe):
-    with open(video_pipe, 'rb') as pipe:
-        while True: 
-            raw_frame_data = pipe.read(1920 * 1080 * 3)
+async def video_cycle(source: rtc.VideoSource, process):
+    while True: 
+        raw_frame_data = await process.stdout.read(1920 * 1080 * 3)
 
-            if not raw_frame_data:
-                break
+        if not raw_frame_data:
+            break
 
-    video_frame = source.VideoFrame(width=1920, height=1080, data=raw_frame_data)
-    source.capture_frame(video_frame)
+        video_frame = source.VideoFrame(width=1920, height=1080, data=raw_frame_data)
+        source.capture_frame(video_frame)
 
 
 async def start_ffmpeg_stream(video_pipe):
@@ -210,9 +209,9 @@ async def main(room: rtc.Room) -> None:
         os.mkfifo(video_pipe)
 
     # Démarrer la capture et le trascodage vidéo
-    await start_ffmpeg_stream(video_pipe)
+    ffmpeg_task = await start_ffmpeg_stream(video_pipe)
 
-    await publish_frame_to_livekit(room, video_pipe)
+    await publish_frame_to_livekit(room, ffmpeg_task)
 
 if __name__ == "__main__":
     logging.basicConfig(
