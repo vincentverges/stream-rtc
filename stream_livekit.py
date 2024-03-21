@@ -207,7 +207,7 @@ async def main(room: rtc.Room) -> None:
     ffmpeg_task = asyncio.create_task(start_ffmpeg_stream(video_pipe))
 
     # Publier le flux vidéo dans Livekit
-    livekit_task = asyncio.create_task(publish_video_to_livekit("rccar", video_pipe))
+    livekit_task = asyncio.create_task(publish_video_to_livekit(room, video_pipe))
 
     await asyncio.gather(ffmpeg_task, livekit_task)
 
