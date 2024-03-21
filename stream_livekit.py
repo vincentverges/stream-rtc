@@ -33,8 +33,14 @@ async def publish_frame_to_livekit(room, process):
     source = rtc.VideoSource(1920, 1080)
     # Créer une piste vidéo à partir de cette source
     track = rtc.LocalVideoTrack.create_video_track("camera", source)
-    await room.local_participant.publish_track(track)
+    options = rtc.TrackPublishOptions()
+    options.source = rtc.TrackSource.SOURCE_CAMERA
+    publication = await room.local_participant.publish_track(track, options)
+    logging.info("published track %s", publication.sid)
+    asyncio.ensure_future(video_cycle(source, process))
 
+ 
+async def video_cycle(source: rtc.VideoSource, process):
     while True: 
         raw_frame_data = await process.stdout.read(1920 * 1080 * 3)
 
@@ -192,6 +198,7 @@ async def main(room: rtc.Room) -> None:
         logging.info(f"Data sent succesfully : {resp} - {data_to_send}")
     except Exception as e:
         logging.error(f"Error sending data: {e}")
+
 
     # Flux video 
     video_pipe = "/tmp/video_pipe"
