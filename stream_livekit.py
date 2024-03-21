@@ -32,7 +32,7 @@ async def publish_video_to_livekit(room: rtc.Room, video_pipe: str):
     # Créer une source vidéo personnalisée
     source = rtc.VideoSource(1920, 1080)
     # Créer une piste vidéo à partir de cette source
-    track = rtc.LocalVideoTrack("Camera", source)
+    track = rtc.LocalVideoTrack.create_video_track("camera", source)
     await room.local_participant.publish_track(track)
 
     # Ouvrir le pipe video pour la lecture
