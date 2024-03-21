@@ -43,7 +43,7 @@ async def publish_frame_to_livekit(room, video_pipe):
 async def video_cycle(source: rtc.VideoSource, video_pipe):
     with open(video_pipe, 'rb') as pipe:
         while True: 
-            raw_frame_data = await pipe.read(1920 * 1080 * 3)
+            raw_frame_data = pipe.read(1920 * 1080 * 3)
 
             if not raw_frame_data:
                 break
