@@ -203,7 +203,7 @@ async def main(room: rtc.Room) -> None:
     # Démarrer la capture et le trascodage vidéo
     ffmpeg_task = await start_ffmpeg_stream(video_pipe)
 
-    publish_frame_to_livekit(room, ffmpeg_task)
+    await publish_frame_to_livekit(room, ffmpeg_task)
 
 if __name__ == "__main__":
     logging.basicConfig(
