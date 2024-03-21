@@ -53,7 +53,8 @@ async def video_cycle(source: rtc.VideoSource, process):
 
 async def start_ffmpeg_stream(video_pipe):
     # Commande pour capturer avec libcamera-vid et transcoder avec FFmpeg en H.264
-    cmd = f"libcamera-vid -t 0 --width 1920 --height 1080 --framerate 30 --inline -o - | ffmpeg -i - -c:v libvpx -b:v 1M -f webm pipe:1 > {video_pipe}"
+    #cmd = f"libcamera-vid -t 0 --width 1920 --height 1080 --framerate 30 --inline -o - | ffmpeg -i - -c:v libvpx -b:v 1M -f webm pipe:1 > {video_pipe}"
+    cmd = f"ffmpeg -f lavfi -i testsrc=size=1920x1080:rate=25 -c:v libvpx -b:v 1M -t 30 -f webm pipe:1 > {video_pipe}"
     process = await asyncio.create_subprocess_shell(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     return process
