@@ -27,7 +27,7 @@ async def get_token():
                 logging.error(f"Failed to get token, status: {resp.status}")
                 return None
 
-async def publish_frame_to_livekit(room, process):
+async def publish_frame_to_livekit(room, video_pipe):
     # Envoi du stream sur la room
     # Créer une source vidéo personnalisée
     source = rtc.VideoSource(1920, 1080)
@@ -37,15 +37,16 @@ async def publish_frame_to_livekit(room, process):
     options.source = rtc.TrackSource.SOURCE_CAMERA
     publication = await room.local_participant.publish_track(track, options)
     logging.info("published track %s", publication.sid)
-    asyncio.ensure_future(video_cycle(source, process))
+    asyncio.ensure_future(video_cycle(source, video_pipe))
 
  
-async def video_cycle(source: rtc.VideoSource, process):
-    while True: 
-        raw_frame_data = await process.stdout.read(1920 * 1080 * 3)
+async def video_cycle(source: rtc.VideoSource, video_pipe):
+    with open(video_pipe, 'rb') as pipe:
+        while True: 
+            raw_frame_data = await pipe.read(1920 * 1080 * 3)
 
-        if not raw_frame_data:
-            break
+            if not raw_frame_data:
+                break
 
         video_frame = source.VideoFrame(width=1920, height=1080, data=raw_frame_data)
         source.capture_frame(video_frame)
@@ -53,8 +54,8 @@ async def video_cycle(source: rtc.VideoSource, process):
 
 async def start_ffmpeg_stream(video_pipe):
     # Commande pour capturer avec libcamera-vid et transcoder avec FFmpeg en H.264
-    #cmd = f"libcamera-vid -t 0 --width 1920 --height 1080 --framerate 30 --inline -o - | ffmpeg -i - -c:v libvpx -b:v 1M -f webm pipe:1 > {video_pipe}"
-    cmd = f"ffmpeg -f lavfi -i testsrc=size=1920x1080:rate=25 -c:v libvpx -b:v 1M -t 30 -f webm pipe:1 > {video_pipe}"
+    cmd = f"libcamera-vid -t 0 --width 1920 --height 1080 --framerate 30 --inline -o - | ffmpeg -i - -c:v libvpx -b:v 1M -f webm pipe:1 > {video_pipe}"
+    # cmd = f"ffmpeg -f lavfi -i testsrc=size=1920x1080:rate=25 -c:v libvpx -b:v 1M -t 30 -f webm pipe:1 > {video_pipe}"
     process = await asyncio.create_subprocess_shell(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     return process
@@ -209,9 +210,9 @@ async def main(room: rtc.Room) -> None:
         os.mkfifo(video_pipe)
 
     # Démarrer la capture et le trascodage vidéo
-    ffmpeg_task = await start_ffmpeg_stream(video_pipe)
+    await start_ffmpeg_stream(video_pipe)
 
-    await publish_frame_to_livekit(room, ffmpeg_task)
+    await publish_frame_to_livekit(room, video_pipe)
 
 if __name__ == "__main__":
     logging.basicConfig(
