@@ -27,7 +27,7 @@ async def get_token():
                 logging.error(f"Failed to get token, status: {resp.status}")
                 return None
 
-async def publish_video_to_livekit(room: rtc.Room, video_pipe: str):
+async def publish_video_to_livekit(room, video_pipe):
     # Envoi du stream sur la room
     # Créer une source vidéo personnalisée
     source = rtc.VideoSource(1920, 1080)
