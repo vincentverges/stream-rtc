@@ -48,8 +48,8 @@ async def video_cycle(source: rtc.VideoSource, video_pipe):
             if not raw_frame_data:
                 break
 
-        video_frame = source.VideoFrame(width=1920, height=1080, data=raw_frame_data)
-        source.capture_frame(video_frame)
+    video_frame = source.VideoFrame(width=1920, height=1080, data=raw_frame_data)
+    source.capture_frame(video_frame)
 
 
 async def start_ffmpeg_stream(video_pipe):
