@@ -27,7 +27,7 @@ async def get_token():
                 logging.error(f"Failed to get token, status: {resp.status}")
                 return None
 
-async def publish_video_to_livekit(room, video_pipe):
+async def publish_frame_to_livekit(room, process):
     # Envoi du stream sur la room
     # Créer une source vidéo personnalisée
     source = rtc.VideoSource(1920, 1080)
@@ -35,26 +35,22 @@ async def publish_video_to_livekit(room, video_pipe):
     track = rtc.LocalVideoTrack.create_video_track("camera", source)
     await room.local_participant.publish_track(track)
 
-    # Ouvrir le pipe video pour la lecture
-    with open(video_pipe, 'rb') as pipe:
-        while True:
-            # Lire les données depuis le pipe
-            data = pipe.read(1920 * 1080)
+    while True: 
+        raw_frame_data = await process.stdout.read(1920 * 1080 * 3)
 
-            if not data:
-                break
+        if not raw_frame_data:
+            break
 
-            source.push_video_data(data)
+        video_frame = source.VideoFrame(width=1920, height=1080, data=raw_frame_data)
+        source.capture_frame(video_frame)
 
 
-
-async def start_ffmpeg_stream(video_pipe: str):
+async def start_ffmpeg_stream(video_pipe):
     # Commande pour capturer avec libcamera-vid et transcoder avec FFmpeg en H.264
     cmd = f"libcamera-vid -t 0 --width 1920 --height 1080 --framerate 25 --inline -o - | ffmpeg -i - -c:v libx264 -b:v 1M -f mpegts pipe:1 > {video_pipe}"
-    process = await asyncio.create_subprocess_shell(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = await asyncio.create_subprocess_shell(cmd, stdout=subprocess.PIPE)
 
-    # Attendre que le processus se termine (cela pourrait ne jamais arriver si vous streamez indéfiniment)
-    await process.wait()
+    return process
 
 async def main(room: rtc.Room) -> None:
 
@@ -197,6 +193,7 @@ async def main(room: rtc.Room) -> None:
     except Exception as e:
         logging.error(f"Error sending data: {e}")
 
+    # Flux video 
     video_pipe = "/tmp/video_pipe"
 
     # Créer un pipe nommé si nécessaire
@@ -204,12 +201,9 @@ async def main(room: rtc.Room) -> None:
         os.mkfifo(video_pipe)
 
     # Démarrer la capture et le trascodage vidéo
-    ffmpeg_task = asyncio.create_task(start_ffmpeg_stream(video_pipe))
+    ffmpeg_task = await start_ffmpeg_stream(video_pipe)
 
-    # Publier le flux vidéo dans Livekit
-    livekit_task = asyncio.create_task(publish_video_to_livekit(room, video_pipe))
-
-    await asyncio.gather(ffmpeg_task, livekit_task)
+    publish_frame_to_livekit(room, ffmpeg_task)
 
 if __name__ == "__main__":
     logging.basicConfig(
