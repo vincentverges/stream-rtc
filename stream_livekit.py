@@ -30,7 +30,7 @@ async def get_token():
 async def publish_video_to_livekit(room: rtc.Room, video_pipe: str):
     # Envoi du stream sur la room
     # Créer une source vidéo personnalisée
-    source = rtc.VideoSource()
+    source = rtc.VideoSource(1920, 1080)
     # Créer une piste vidéo à partir de cette source
     track = rtc.LocalVideoTrack(name="Camera", source=source)
     await room.local_participant.publish_track(track)
