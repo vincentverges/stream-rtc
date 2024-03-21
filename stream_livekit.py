@@ -9,8 +9,6 @@ import uuid
 import time
 
 from livekit import rtc
-from picamera2 import Picamera2, Preview
-from picamera2.encoders import H264Encoder
 
 async def get_token():
     headers = {
@@ -27,6 +25,35 @@ async def get_token():
             else:
                 logging.error(f"Failed to get token, status: {resp.status}")
                 return None
+
+async def publish_video_to_livekit(room: rtc.Room, video_pipe: str):
+    # Envoi du stream sur la room
+    # Créer une source vidéo personnalisée
+    source = rtc.VideoSource()
+    # Créer une piste vidéo à partir de cette source
+    track = rtc.LocalVideoTrack(name="Camera", source=source)
+    await room.local_participant.publish_track(track)
+
+    # Ouvrir le pipe video pour la lecture
+    with open(video_pipe, 'rb') as pipe:
+        while True:
+            # Lire les données depuis le pipe
+            data = pipe.read(1920 * 1080)
+
+            if not data:
+                break
+
+            source.push_video_data(data)
+
+
+
+async def start_ffmpeg_stream(video_pipe: str):
+    # Commande pour capturer avec libcamera-vid et transcoder avec FFmpeg en H.264
+    cmd = f"libcamera-vid -t 0 --width 1920 --height 1080 --framerate 25 --inline -o - | ffmpeg -i - -c:v libx264 -b:v 1M -f mpegts pipe:1 > {video_pipe}"
+    process = await asyncio.create_subprocess_shell(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Attendre que le processus se termine (cela pourrait ne jamais arriver si vous streamez indéfiniment)
+    await process.wait()
 
 async def main(room: rtc.Room) -> None:
 
@@ -154,6 +181,7 @@ async def main(room: rtc.Room) -> None:
     logging.info("connected to room %s", room.name)
     logging.info("participants: %s", room.participants)
 
+    # Envoi d'un message dans le chat
     message_id = str(uuid.uuid4())
     timestamp = int(time.time() * 1000)
     str_data = json.dumps({
@@ -168,57 +196,19 @@ async def main(room: rtc.Room) -> None:
     except Exception as e:
         logging.error(f"Error sending data: {e}")
 
-    # Picamera2 init
-    picam2 = Picamera2()
-    video_config = picam2.create_video_configuration()
-    picam2.configure(video_config)
-    # picam2.start_preview(Preview.QTGL) 
-    
-    encoder = H264Encoder(repeat=True, iperiod=15)
-    
-    video_track = rtc.LocalVideoTrack.create_video_track("camera", encoder.get_stream())
-    asyncio.run_coroutine_threadsafe(room.local_participant.publish_track(video_track), asyncio.get_event_loop())
-    
+    video_pipe = "/tmp/video_pipe"
 
-    # Démarrer l'enregistrement avec l'encodeur H.264
-    picam2.start_recording(encoder)
+    # Créer un pipe nommé si nécessaire
+    if not os.path.exists(video_pipe):
+        os.mkfifo(video_pipe)
 
-    try:
-        while True:
-            await asyncio.sleep(1)
-    except Exception as e:
-        logging.error(f"Error during video streaming: {e}")
-    finally:
-        picam2.stop_recording()
-        picam2.stop()
+    # Démarrer la capture et le trascodage vidéo
+    ffmpeg_task = asyncio.create_task(start_ffmpeg_stream(video_pipe))
 
-    '''source = rtc.VideoSource(1920, 1080)
-    track = rtc.LocalVideoTrack.create_video_track("camera", source)
-    options = rtc.TrackPublishOptions()
-    options.source = rtc.TrackSource.SOURCE_CAMERA
-    publication = await room.local_participant.publish_track(track)
-    logging.info("published track %s", publication.sid)
-    
-    asyncio.ensure_future(stream_camera_to_livekit(source, picam2))'''
+    # Publier le flux vidéo dans Livekit
+    livekit_task = asyncio.create_task(publish_video_to_livekit("rccar", video_pipe))
 
-
-
-async def stream_camera_to_livekit(source, picam2):
-
-    try:
-        while True:
-            array_frame = picam2.capture_array("stream_cam")
-            frame = rtc.VideoFrame(1920, 1080, rtc.VideoBufferType.RGBA, array_frame)
-            source.capture_frame(frame)
-            await asyncio.sleep(1 / 30)
-
-    except Exception as e:
-        logging.error(f"Error during video streaming: {e}")
-
-    finally:
-        picam2.stop_recording()  # Arrête l'enregistrement vidéo
-        picam2.stop()  # Arrête la caméra
-        # picam2.stop_preview()
+    await asyncio.gather(ffmpeg_task, livekit_task)
 
 if __name__ == "__main__":
     logging.basicConfig(
